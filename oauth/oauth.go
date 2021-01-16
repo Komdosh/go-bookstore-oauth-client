@@ -2,7 +2,7 @@ package oauth
 
 import (
 	"fmt"
-	"github.com/Komdosh/go-bookstore-oauth-client/oauth/rest_error"
+	"github.com/Komdosh/go-bookstore-utils/rest_errors"
 	"github.com/go-resty/resty"
 	"net/http"
 	"strconv"
@@ -59,7 +59,7 @@ func GetClientId(request *http.Request) int64 {
 	return clientId
 }
 
-func AuthenticateRequest(request *http.Request) *rest_error.RestErr {
+func AuthenticateRequest(request *http.Request) rest_errors.RestErr {
 	if request == nil {
 		return nil
 	}
@@ -73,7 +73,7 @@ func AuthenticateRequest(request *http.Request) *rest_error.RestErr {
 
 	at, err := getAccessToken(accessTokenId)
 	if err != nil {
-		if err.Status == http.StatusNotFound {
+		if err.Status() == http.StatusNotFound {
 			return nil
 		}
 		return err
@@ -91,15 +91,15 @@ func cleanRequest(request *http.Request) {
 	request.Header.Del(headerXCallerId)
 }
 
-func getAccessToken(accessTokenId string) (*accessToken, *rest_error.RestErr) {
-	var restErr *rest_error.RestErr
+func getAccessToken(accessTokenId string) (*accessToken, rest_errors.RestErr) {
+	var restErr rest_errors.RestErr
 	var at accessToken
 	_, err := usersRestClient.R().SetError(&restErr).SetResult(&at).Get(fmt.Sprintf("%s/oauth/access_token/%s", oauthBaseURL, accessTokenId))
 	if restErr != nil {
 		return nil, restErr
 	}
 	if err != nil {
-		return nil, rest_error.NewInternalServerError("error while login user")
+		return nil, rest_errors.NewInternalServerError("error while login user", err)
 	}
 
 	return &at, nil
